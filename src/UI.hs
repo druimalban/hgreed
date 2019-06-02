@@ -94,7 +94,7 @@ helpDialogue = str "Welcome to hGreed. (Original game by Matthew Day <mday@icons
                 ++ " placed you off the grid or over a previously eaten square"
                 ++ " unless no valid moves exist, in which case your game ends."
                 ++ " Other Greed commands are 'p' to toggle the highlighting of"
-                ++ " possible moves, '?' to view this message, and 'q' to quit."
+                ++ " possible moves, '?' to view this message, and 'q' to quit.")
 
 handleEvent :: GreedState -> BrickEvent GreedStateName Progression -> EventM GreedStateName (Next GreedState)
 handleEvent gs (AppEvent Progression) = checkFinaleE gs
