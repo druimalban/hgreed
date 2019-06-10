@@ -1,5 +1,5 @@
 name:                hgreed
-version:             0.1.0.0
+version:             0.1.1.0
 synopsis:            Haskell implementation of the `greed` game
 description:         Haskell implementation of the `greed` game.
                      For more information about the original game,
@@ -24,6 +24,7 @@ executable hgreed
   build-depends:       array >= 0.5.3.0 && < 0.5.4.0,
                        base >= 4.7 && < 5,
                        brick >= 0.47 && < 0.48,
+                       directory >= 1.3.3.2 && < 1.3.4,
                        microlens >= 0.4.10 && < 0.5,
                        microlens-th >= 0.4.2.3 && < 0.4.3,
                        random >= 1.1 && < 1.2,

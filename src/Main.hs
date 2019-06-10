@@ -10,6 +10,7 @@ import Data.List (sortBy)
 import Graphics.Vty (mkVty, defaultConfig)
 import Lens.Micro (_3)
 import Lens.Micro.Extras (view)
+import System.Directory (doesFileExist)
 import System.Environment (getEnv)
 
 import Greed (score)
@@ -31,19 +32,23 @@ main = do
 
   let scoreFile = homeDir ++ "/.hgreedscores"
 
-  existingScores <- readScores scoreFile
+  putStrLn $ showScore finalState
   newScore <- composeScore finalState
   
-  putStrLn $ showScore finalState
+  scoreFileExists <- doesFileExist scoreFile
+  if scoreFileExists then do
+    existingScores <- readScores scoreFile
 
-  case existingScores of
-    Nothing -> do
-      putStrLn "No existing high scores"
-      writeScores scoreFile [newScore]
-    Just es -> do
-      putStrLn "High scores:"
-      putStrLn $ prettyScores $
-                 take 10 $
-                 reverse $
-                 sortBy (compare `on` (\x -> view _3 x)) es
-      writeScores scoreFile (newScore:es) 
+    case existingScores of
+      Nothing -> do
+        putStrLn "No existing high scores in ~/.hgreedscores."
+        writeScores scoreFile [newScore]
+      Just es -> do
+        putStrLn "High scores:"
+        putStrLn $ prettyScores $
+                   take 10 $
+                   reverse $
+                   sortBy (compare `on` (\x -> view _3 x)) es
+        writeScores scoreFile (newScore:es) 
+  else do putStrLn "Creating ~/.hgeedscores."
+          writeScores scoreFile [newScore]
