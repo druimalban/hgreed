@@ -10,7 +10,7 @@ license-file:        LICENSE
 author:              Duncan Guthrie
 maintainer:          dguthrie@posteo.net
 copyright:           Duncan Guthrie
-category:            Web
+category:            Game
 build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
