@@ -99,10 +99,11 @@ getTileAt gs pos
   | tileWithinGrid gs pos = Just $ (view gridKey gs) ! pos
   | otherwise = Nothing
 
-splitAtCols :: Int -> [a]-> [[a]]
-splitAtCols _ []  = []
-splitAtCols _ [x] = [[x]]
-splitAtCols n xs  = fst t : splitAtCols n (snd t) where t = splitAt n xs
+splitAtCols :: Int -> [a] -> [[a]]
+splitAtCols n xs = apo coalg (n, xs) where
+  coalg (_, []) = Nil
+  coalg (n, xs) = Cons x (return (n, xs')) where
+    (x, xs') = splitAt n xs
 
 neighbourInDir :: GreedState -> Rose -> Bool
 neighbourInDir gs dir = case (lookup dir $ allNeighbours gs) of
