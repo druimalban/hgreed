@@ -74,7 +74,7 @@ planPath pos dir count = Plan dir $ apo coalg (pos, dir, count) where
         np p' d' c' = (nextPosition p' d', d', c'-1)
 
 tileWithinGrid :: GreedState -> Pos -> Bool
-tileWithinGrid gs p = p `elem` (indices $ view gridKey gs)
+tileWithinGrid gs p = p `elem` indices (view gridKey gs)
 
 allNeighbours :: GreedState -> [(Rose, Pos)]
 allNeighbours gs = filter (validT gs) [(NW, (c-1, r+1)), (N, (c, r+1)), (NE, (c+1, r+1)),
@@ -85,18 +85,16 @@ allNeighbours gs = filter (validT gs) [(NW, (c-1, r+1)), (N, (c, r+1)), (NE, (c+
         validT gs (d, p) = tileWithinGrid gs p
   
 pathWithinBounds :: GreedState -> Plan -> Bool
-pathWithinBounds gs path = foldr (&&) True $ map (tileWithinGrid gs) $ view elements path
+pathWithinBounds gs path = all (tileWithinGrid gs) (view elements path)
 
 legalPath :: GreedState -> Plan -> Bool
 legalPath gs path
   | not $ pathWithinBounds gs path = False
-  | otherwise = foldr (&&) True $
-                map (not . eaten . (!) (view gridKey gs)) $
-                view elements path
+  | otherwise = all (not . eaten . (!) (view gridKey gs)) (view elements path)
 
 getTileAt :: GreedState -> Pos -> Maybe Tile
 getTileAt gs pos
-  | tileWithinGrid gs pos = Just $ (view gridKey gs) ! pos
+  | tileWithinGrid gs pos = return (view gridKey gs ! pos)
   | otherwise = Nothing
 
 splitAtCols :: Int -> [a] -> [[a]]
@@ -106,15 +104,15 @@ splitAtCols n xs = apo coalg (n, xs) where
     (x, xs') = splitAt n xs
 
 neighbourInDir :: GreedState -> Rose -> Bool
-neighbourInDir gs dir = case (lookup dir $ allNeighbours gs) of
+neighbourInDir gs dir = case lookup dir (allNeighbours gs) of
   Nothing -> False
   Just p -> True
 
 collapsePaths :: [Plan] -> [Pos]
-collapsePaths = foldr (\i j -> (view elements i) ++ j) []
+collapsePaths = foldr (\i j -> view elements i ++ j) []
 
 eaten :: Tile -> Bool
-eaten t = (view tileState t) == Eaten
+eaten t = view tileState t == Eaten
 
 eat :: Tile -> Tile
 eat = set tileState Eaten
@@ -134,12 +132,12 @@ eatPlans       = plansOverState eat
 highlightPlans = plansOverState highlight
 
 coverGrid :: GreedState -> GreedState
-coverGrid = over (gridKey . traverse) (cover)
+coverGrid = over (gridKey . traverse) cover
 
 plansOverState :: (Tile -> Tile) -> [Plan] -> GreedState -> GreedState
 plansOverState pf paths = over gridKey (hlp paths pf) where
   hlp :: [Plan] -> (Tile -> Tile) -> GridKey -> GridKey
-  hlp ps pf gk = gk // (map (setup gk pf) (collapsePaths ps))
+  hlp ps pf gk = gk // map (setup gk pf) (collapsePaths ps)
 
   setup :: GridKey -> (Tile -> Tile) -> Pos -> (Pos, Tile)
   setup gk pf = id &&& (pf . (gk !))
@@ -175,12 +173,12 @@ pathInDir gs dir = do
   return $ Plan dir nodes
 
 increment :: Rose -> GreedState -> GreedState
-increment dir gs = case (view greedState gs) of
+increment dir gs = case view greedState gs of
   Terminus    -> set greedState Finale gs
   SeekingHelp -> set greedState Greediness gs
-  _ -> case (pathInDir gs dir) of
+  _ -> case pathInDir gs dir of
     Nothing ->
-      if length (buildPlans gs) == 0 then
+      if null (buildPlans gs) then
         set greedState Terminus gs
       else
         set greedState Blocking gs
@@ -196,11 +194,11 @@ increment dir gs = case (view greedState gs) of
       let noMarkState      = posOverState (set tileState Eaten)  lastPos noHighlightState -- Update tile at old position to not be marked
       let newMarkState     = posOverState (set tileState Marked) nextPos noMarkState 
       let nextPosState     = set position nextPos newMarkState
-      let nextScoreState   = set score (lastScore + (length $ view elements path) - 1) nextPosState
+      let nextScoreState   = set score (lastScore + length (view elements path) - 1) nextPosState
 
       -- set the highlight again as appropriate
       let nextPaths = buildPlans nextScoreState
-      if (view showPlans gs) then (highlightPlans nextPaths nextScoreState) else nextScoreState
+      if view showPlans gs then highlightPlans nextPaths nextScoreState else nextScoreState
 
 toggleShowPlans :: GreedState -> GreedState
 toggleShowPlans gs
@@ -208,7 +206,7 @@ toggleShowPlans gs
   | otherwise = highlightPlans (buildPlans gs) (over showPlans not gs) -- if it is false, we do show the plans, and we also falsify it.
 
 anyKeyPress :: GreedState -> GreedState
-anyKeyPress gs = case (view greedState gs) of
+anyKeyPress gs = case view greedState gs of
   Terminus -> set greedState Finale gs    -- press any key after  we run out of moves.
   Quitting -> set greedState Greediness gs    -- we press any key on the quit prompt, don't quit!
   SeekingHelp -> set greedState Greediness gs -- press any key to get out of help state.
@@ -216,7 +214,7 @@ anyKeyPress gs = case (view greedState gs) of
 
 -- catch-all state transition for pressing 'q'
 quit :: GreedState -> GreedState
-quit gs = case (view greedState gs) of
+quit gs = case view greedState gs of
   Greediness -> set greedState Quitting gs
   Blocking -> set greedState Quitting gs
   Quitting -> set greedState Finale gs
@@ -226,7 +224,7 @@ quit gs = case (view greedState gs) of
 
 -- catch-all state transition for pressing 'y'.
 confirm :: GreedState -> GreedState
-confirm gs = case (view greedState gs) of
+confirm gs = case view greedState gs of
   Quitting -> set greedState Finale gs
   Terminus -> set greedState Finale gs
   SeekingHelp -> set greedState Greediness gs
@@ -236,7 +234,7 @@ confirm gs = case (view greedState gs) of
 
 -- catch-all state transition for pressing '?'
 seekHelp :: GreedState -> GreedState
-seekHelp gs = case (view greedState gs) of
+seekHelp gs = case view greedState gs of
   SeekingHelp -> set greedState Greediness gs
   Greediness -> set greedState SeekingHelp gs
   Blocking -> set greedState SeekingHelp gs

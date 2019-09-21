@@ -40,7 +40,7 @@ calcScore gs = do
   let max = toEnum ((r+1) * (c+1)) :: Float
   (sc, (sc' / max) * 100)
 
-composeScore :: GreedState -> IO (GreedScore)
+composeScore :: GreedState -> IO GreedScore
 composeScore gs = do
   let sc = view score gs
   username <- getEnv "USER"
@@ -54,7 +54,7 @@ readScores fp = do
         extractScore :: String -> Maybe GreedScore
         extractScore line = do
           let wds = splitOn "," line
-          if (length wds) /= 3 then Nothing else
+          if length wds /= 3 then Nothing else
             sequenceT (Just $ head wds,
                        Just $ wds !! 1,
                        readMaybe (last wds) :: Maybe Int)
@@ -62,11 +62,11 @@ readScores fp = do
   return sortedRecords
 
 writeScores :: FilePath -> [GreedScore] -> IO ()
-writeScores fp = (writeFile fp . unlines . map prettyC) where
+writeScores fp = writeFile fp . unlines . map prettyC where
   prettyC :: GreedScore -> String
-  prettyC sc = (view _1 sc) ++ "," ++ (view _2 sc) ++ "," ++ (show $ view _3 sc)  
+  prettyC sc = view _1 sc ++ "," ++ view _2 sc ++ "," ++ show (view _3 sc)
 
 prettyScores :: [GreedScore] -> String
 prettyScores = unlines . map pretty where
   pretty :: GreedScore -> String
-  pretty sc = (view _1 sc) ++ " " ++ (view _2 sc) ++ " " ++ (show $ view _3 sc)
+  pretty sc = view _1 sc ++ " " ++ view _2 sc ++ " " ++ show (view _3 sc)

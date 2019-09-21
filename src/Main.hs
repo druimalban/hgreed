@@ -45,10 +45,8 @@ main = do
         writeScores scoreFile [newScore]
       Just es -> do
         putStrLn "High scores:"
-        putStrLn $ prettyScores $
-                   take 10 $
-                   reverse $
-                   sortBy (compare `on` (\x -> view _3 x)) es
+        putStrLn . prettyScores . take 10 $
+          sortBy (flip compare `on` view _3) es
         writeScores scoreFile (newScore:es) 
   else do putStrLn "Creating ~/.hgeedscores."
           writeScores scoreFile [newScore]

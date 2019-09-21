@@ -50,14 +50,14 @@ defaultMap :: AttrMap
 defaultMap = themeToAttrMap defaultTheme
 
 tileWidget :: Tile -> Widget GreedStateName
-tileWidget t = case (view tileState t) of
+tileWidget t = case view tileState t of
   Marked      -> withAttr (attrName "path")  (str me)
   Highlighted -> withAttr (attrName "path")  (str $ show $ view annotation t)
   Merely      -> withAttr (attrName n)       (str n) where n = show $ view annotation t
   Eaten       -> withAttr (attrName "empty") (str " ")
 
 gridWidget :: GreedState -> Widget GreedStateName
-gridWidget gs = case (view greedState gs) of 
+gridWidget gs = case view greedState gs of 
                   SeekingHelp -> border $ padAll 2 $ center helpDialogue
                   _ -> do 
                     let cols = (snd . snd . bounds . view gridKey) gs
@@ -73,28 +73,29 @@ gridWidget gs = case (view greedState gs) of
                       alg' (Cons x y) = tileWidget x <=> y
 
 dialogue :: GreedState -> Widget GreedStateName
-dialogue gs = (scoreFmt gs) <+> case (view greedState gs) of 
-  Blocking -> (hCenter $ str "Bad move.")
-  Quitting -> (hCenter $ str "Really quit?")
-  Terminus -> (hCenter $ str "Press any key to quit")
-  _ -> (hCenter $ str "hGreed v0.1 - press '?' for help")
+dialogue gs = scoreFmt gs <+> case view greedState gs of 
+  Blocking -> hCenter (str "Bad move.")
+  Quitting -> hCenter (str "Really quit?")
+  Terminus -> hCenter (str "Press any key to quit")
+  _ -> hCenter (str "hGreed v0.1 - press '?' for help")
   where
     scoreFmt gs = withAttr (attrName "misc") (scoring gs)
 
 helpDialogue :: Widget GreedStateName
 helpDialogue = str "Welcome to hGreed. (Original game by Matthew Day <mday@iconsys.uu.net>.)"
-     <=> (strWrap $ "The object of Greed is to erase as much of the screen as"
-                ++ " possible by moving around in a grid of numbers. To move,"
-                ++ " use the arrow keys, your number pad, or one of the letters"
-                ++ " 'hjklyubn'. Your location is signified by the '%c' symbol."
-                ++ " When you move in a direction, you erase N number of grid"
-                ++ " squares in that direction, N being the first number in that"
-                ++ " direction. Your score reflects the total number of squares"
-                ++ " eaten. Greed will not let you make a move that would have"
-                ++ " placed you off the grid or over a previously eaten square"
-                ++ " unless no valid moves exist, in which case your game ends."
-                ++ " Other Greed commands are 'p' to toggle the highlighting of"
-                ++ " possible moves, '?' to view this message, and 'q' to quit.")
+     <=> strWrap ( mconcat
+     [ "The object of Greed is to erase as much of the screen as"
+     , " possible by moving around in a grid of numbers. To move,"
+     , " use the arrow keys, your number pad, or one of the letters"
+     , " 'hjklyubn'. Your location is signified by the '%c' symbol."
+     , " When you move in a direction, you erase N number of grid"
+     , " squares in that direction, N being the first number in that"
+     , " direction. Your score reflects the total number of squares"
+     , " eaten. Greed will not let you make a move that would have"
+     , " placed you off the grid or over a previously eaten square"
+     , " unless no valid moves exist, in which case your game ends."
+     , " Other Greed commands are 'p' to toggle the highlighting of"
+     , " possible moves, '?' to view this message, and 'q' to quit." ] )
 
 handleEvent :: GreedState -> BrickEvent GreedStateName Progression -> EventM GreedStateName (Next GreedState)
 handleEvent gs (AppEvent Progression) = checkFinaleE gs
@@ -114,7 +115,7 @@ handleEvent gs (VtyEvent (V.EvKey k []))
 handleEvent gs _ = continue $ anyKeyPress gs
 
 checkFinaleE :: GreedState -> EventM GreedStateName (Next GreedState)
-checkFinaleE gs = case (view greedState gs) of
+checkFinaleE gs = case view greedState gs of
   Finale -> halt gs
   _ -> continue gs
 
@@ -127,9 +128,9 @@ initialState = do
   let cols = 79 
   sample <- (replicateM (cols*rows) . randomRIO) (1,9) :: IO [Int]
 
-  let tiles = map (\i -> Tile Merely i) sample
+  let tiles = map (Tile Merely) sample
   let initialNodes = splitAtCols cols tiles
-  let flattened = foldr (++) [] initialNodes
+  let flattened = concat initialNodes
   let keys      = listArray ((0,0),(cols-1,rows-1)) flattened
   
   pr <- randomRIO (0, rows-1) :: IO Int
